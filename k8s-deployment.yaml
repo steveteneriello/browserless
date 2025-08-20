@@ -1,0 +1,291 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: browserless
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: browserless-config
+  namespace: browserless
+data:
+  NODE_ENV: "production"
+  ENABLE_METRICS: "true"
+  LOG_LEVEL: "info"
+  MAX_CONCURRENT_SESSIONS: "10"
+  BROWSER_TIMEOUT: "30000"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  MEMORY_WARNING_THRESHOLD: "0.8"
+  MEMORY_CRITICAL_THRESHOLD: "0.9"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: browserless-secrets
+  namespace: browserless
+type: Opaque
+data:
+  API_KEY: eW91ci1zZWNyZXQtYXBpLWtleQ== # base64 encoded
+  BROWSER_TOKEN: eW91ci1icm93c2VybGVzcy10b2tlbg== # base64 encoded
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browserless-api
+  namespace: browserless
+  labels:
+    app: browserless-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: browserless-api
+  template:
+    metadata:
+      labels:
+        app: browserless-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: browserless-api
+        image: browserless-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: browserless-config
+        env:
+        - name: PORT
+          value: "3000"
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: browserless-secrets
+              key: API_KEY
+        - name: BROWSER_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: browserless-secrets
+              key: BROWSER_TOKEN
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: logs-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: browserless-service
+  namespace: browserless
+  labels:
+    app: browserless-api
+spec:
+  selector:
+    app: browserless-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: browserless-ingress
+  namespace: browserless
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - your-domain.com
+    secretName: browserless-tls
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: browserless-service
+            port:
+              number: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: browserless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: browserless
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: browserless
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: browserless-hpa
+  namespace: browserless
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: browserless-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: browserless-pdb
+  namespace: browserless
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: browserless-api

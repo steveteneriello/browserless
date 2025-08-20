@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+NODE_ENV = "production"
+BROWSER_TIMEOUT = "30000"
+MAX_CONCURRENT_SESSIONS = "5"
+RATE_LIMIT_WINDOW_MS = "900000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+ENABLE_METRICS = "true"
+LOG_LEVEL = "info"

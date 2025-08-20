@@ -1,0 +1,168 @@
+import puppeteer, { Browser, Page } from 'puppeteer';
+import { config } from '../config';
+import { logger } from '../utils/logger';
+import { createError } from '../middleware/errorHandler';
+
+export interface BrowserSession {
+  id: string;
+  browser: Browser;
+  createdAt: Date;
+  lastUsed: Date;
+  isActive: boolean;
+}
+
+export class BrowserPool {
+  private sessions: Map<string, BrowserSession> = new Map();
+  private cleanupInterval: NodeJS.Timeout | null = null;
+
+  async initialize(): Promise<void> {
+    logger.info('Initializing browser pool...');
+    
+    // Start cleanup interval
+    this.cleanupInterval = setInterval(
+      () => this.cleanupSessions(),
+      30000 // Check every 30 seconds
+    );
+
+    logger.info('Browser pool initialized successfully');
+  }
+
+  async createSession(): Promise<BrowserSession> {
+    if (this.sessions.size >= config.maxConcurrentSessions) {
+      throw createError('Maximum concurrent sessions reached', 429);
+    }
+
+    try {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: config.browserArgs,
+        timeout: config.browserTimeout,
+        protocolTimeout: config.browserTimeout,
+      });
+
+      const sessionId = this.generateSessionId();
+      const session: BrowserSession = {
+        id: sessionId,
+        browser,
+        createdAt: new Date(),
+        lastUsed: new Date(),
+        isActive: true
+      };
+
+      this.sessions.set(sessionId, session);
+      
+      // Set up browser disconnect handler
+      browser.on('disconnected', () => {
+        logger.warn(`Browser session ${sessionId} disconnected`);
+        this.sessions.delete(sessionId);
+      });
+
+      logger.info(`Created browser session ${sessionId}`);
+      return session;
+
+    } catch (error) {
+      logger.error('Failed to create browser session:', error);
+      throw createError('Failed to create browser session', 500);
+    }
+  }
+
+  async getSession(sessionId: string): Promise<BrowserSession> {
+    const session = this.sessions.get(sessionId);
+    
+    if (!session || !session.isActive) {
+      throw createError('Session not found or inactive', 404);
+    }
+
+    session.lastUsed = new Date();
+    return session;
+  }
+
+  async createPage(sessionId: string): Promise<Page> {
+    const session = await this.getSession(sessionId);
+    
+    try {
+      const page = await session.browser.newPage();
+      
+      // Set default timeout
+      page.setDefaultTimeout(config.browserTimeout);
+      page.setDefaultNavigationTimeout(config.browserTimeout);
+
+      // Set viewport
+      await page.setViewport({ width: 1920, height: 1080 });
+
+      // Block unnecessary resources to improve performance
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        const resourceType = req.resourceType();
+        if (['font', 'image', 'media'].includes(resourceType)) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
+      return page;
+
+    } catch (error) {
+      logger.error(`Failed to create page for session ${sessionId}:`, error);
+      throw createError('Failed to create page', 500);
+    }
+  }
+
+  async closeSession(sessionId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    
+    if (session) {
+      try {
+        await session.browser.close();
+        this.sessions.delete(sessionId);
+        logger.info(`Closed browser session ${sessionId}`);
+      } catch (error) {
+        logger.error(`Error closing session ${sessionId}:`, error);
+      }
+    }
+  }
+
+  private cleanupSessions(): void {
+    const now = new Date();
+    const maxAge = 10 * 60 * 1000; // 10 minutes
+
+    for (const [sessionId, session] of this.sessions.entries()) {
+      const age = now.getTime() - session.lastUsed.getTime();
+      
+      if (age > maxAge) {
+        logger.info(`Cleaning up stale session ${sessionId}`);
+        this.closeSession(sessionId);
+      }
+    }
+  }
+
+  private generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  async cleanup(): Promise<void> {
+    logger.info('Cleaning up browser pool...');
+    
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+
+    const promises = Array.from(this.sessions.keys()).map(sessionId => 
+      this.closeSession(sessionId)
+    );
+
+    await Promise.allSettled(promises);
+    this.sessions.clear();
+    
+    logger.info('Browser pool cleanup completed');
+  }
+
+  getStats() {
+    return {
+      totalSessions: this.sessions.size,
+      maxSessions: config.maxConcurrentSessions,
+      activeSessions: Array.from(this.sessions.values()).filter(s => s.isActive).length
+    };
+  }
+}
