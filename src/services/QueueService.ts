@@ -26,11 +26,18 @@ export class QueueService {
     try {
       logger.info('Initializing queue service...');
 
-      // Initialize Redis client
+      // Skip Redis initialization in build environment
+      if (process.env.NODE_ENV === 'build' || process.env.RAILWAY_ENVIRONMENT === 'build') {
+        logger.info('Skipping Redis connection in build environment');
+        return;
+      }
+
+      // Initialize Redis client with timeout
       this.redisClient = Redis.createClient({
         url: config.redisUrl,
         socket: {
-          reconnectStrategy: (retries) => Math.min(retries * 50, 500)
+          reconnectStrategy: (retries) => Math.min(retries * 50, 500),
+          connectTimeout: 10000, // 10 second timeout
         }
       });
 
@@ -42,43 +49,58 @@ export class QueueService {
         logger.info('Connected to Redis');
       });
 
-      await this.redisClient.connect();
+      // Add timeout to Redis connection
+      const connectTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Redis connection timeout')), 15000)
+      );
 
-      // Initialize Bull queue
-      this.queue = new Bull('browserless-queue', {
-        redis: {
-          port: 6379,
-          host: new URL(config.redisUrl).hostname,
-          password: new URL(config.redisUrl).password || undefined,
-        },
-        defaultJobOptions: {
-          removeOnComplete: 10,
-          removeOnFail: 25,
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 2000,
+      await Promise.race([
+        this.redisClient.connect(),
+        connectTimeout
+      ]);
+
+      // Initialize Bull queue only if Redis is connected
+      if (this.redisClient && this.redisClient.isReady) {
+        this.queue = new Bull('browserless-queue', {
+          redis: {
+            port: 6379,
+            host: new URL(config.redisUrl).hostname,
+            password: new URL(config.redisUrl).password || undefined,
           },
-        },
-      });
+          defaultJobOptions: {
+            removeOnComplete: 10,
+            removeOnFail: 25,
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 2000,
+            },
+          },
+        });
 
-      // Set up queue event handlers
-      this.queue.on('completed', (job, result) => {
-        logger.info(`Job ${job.id} completed successfully`);
-      });
+        // Set up queue event handlers
+        this.queue.on('completed', (job, result) => {
+          logger.info(`Job ${job.id} completed successfully`);
+        });
 
-      this.queue.on('failed', (job, err) => {
-        logger.error(`Job ${job.id} failed:`, err);
-      });
+        this.queue.on('failed', (job, err) => {
+          logger.error(`Job ${job.id} failed:`, err);
+        });
 
-      this.queue.on('stalled', (job) => {
-        logger.warn(`Job ${job.id} stalled`);
-      });
+        this.queue.on('stalled', (job) => {
+          logger.warn(`Job ${job.id} stalled`);
+        });
+      }
 
       logger.info('Queue service initialized successfully');
 
     } catch (error) {
       logger.error('Failed to initialize queue service:', error);
+      // Don't throw error in build environment
+      if (process.env.NODE_ENV === 'build' || process.env.RAILWAY_ENVIRONMENT === 'build') {
+        logger.warn('Continuing without queue service in build environment');
+        return;
+      }
       throw error;
     }
   }
