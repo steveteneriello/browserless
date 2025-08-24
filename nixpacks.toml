@@ -4,7 +4,7 @@ nixPkgs = ["chromium"]
 
 [phases.install]
 dependsOn = ["setup"]
-cmd = "npm install --include=dev --no-audit --no-fund"
+cmd = "npm install --include=dev --no-audit --no-fund && ln -sf $(which chromium) /usr/bin/chromium-browser"
 
 [phases.build]
 dependsOn = ["install"]
@@ -14,7 +14,8 @@ NODE_ENV = "production"
 NPM_CONFIG_TIMEOUT = "600000"
 NPM_CONFIG_MAXSOCKETS = "3"
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/nix/store/*/bin/chromium"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium-browser"
+CHROME_BIN = "/usr/bin/chromium-browser"
 NODE_OPTIONS = "--max-old-space-size=256"
 
 [providers.node]

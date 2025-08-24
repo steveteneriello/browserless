@@ -58,6 +58,9 @@ export class App {
 
     this.app.use(compression());
 
+    // Trust proxy for Railway load balancer (specific hop count)
+    this.app.set('trust proxy', 1);
+
     // Rate limiting
     const limiter = rateLimit({
       windowMs: config.rateLimitWindowMs,

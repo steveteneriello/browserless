@@ -38,3 +38,9 @@ lib-cov
 build/Release
 jspm_packages/
 *.tsbuildinfo
+
+# Chrome binaries (too large for Git)
+chrome/
+*.png
+*.pdf
+test_screenshot.sh

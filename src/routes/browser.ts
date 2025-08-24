@@ -103,7 +103,8 @@ export const browserRoutes = (browserPool: BrowserPool, queueService: QueueServi
           'X-Execution-Time': executionTime.toString()
         });
 
-        res.send(screenshot);
+        // Send as Buffer instead of using res.send() which might serialize to JSON
+        res.end(screenshot);
 
         logger.info(`Screenshot completed for ${url} in ${executionTime}ms`);
 

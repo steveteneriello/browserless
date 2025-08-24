@@ -2,6 +2,7 @@ import puppeteer, { Browser, Page } from 'puppeteer';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 import { createError } from '../middleware/errorHandler';
+import { existsSync } from 'fs';
 
 export interface BrowserSession {
   id: string;
@@ -14,6 +15,30 @@ export interface BrowserSession {
 export class BrowserPool {
   private sessions: Map<string, BrowserSession> = new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
+
+  private findChromeExecutable(): string | undefined {
+    // Common Chrome/Chromium paths in order of preference
+    const possiblePaths = [
+      process.env.PUPPETEER_EXECUTABLE_PATH,
+      process.env.CHROME_BIN,
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/opt/google/chrome/chrome',
+      '/snap/bin/chromium',
+    ].filter(Boolean); // Remove falsy values
+
+    for (const path of possiblePaths) {
+      if (path && existsSync(path)) {
+        logger.info(`Found Chrome executable at: ${path}`);
+        return path;
+      }
+    }
+
+    logger.warn('No Chrome executable found, using Puppeteer default');
+    return undefined;
+  }
 
   async initialize(): Promise<void> {
     logger.info('Initializing browser pool...');
@@ -43,7 +68,10 @@ export class BrowserPool {
     const maxRetries = 3;
     
     try {
+      const executablePath = this.findChromeExecutable();
+      
       logger.info('Launching new browser session...', {
+        executablePath,
         args: config.browserArgs.slice(0, 5), // Log only first 5 args to avoid clutter
         timeout: config.browserTimeout,
         currentSessions: this.sessions.size,
@@ -58,7 +86,7 @@ export class BrowserPool {
         ignoreDefaultArgs: false,
         dumpio: process.env.NODE_ENV === 'development', // Only dump output in dev
         pipe: false, // Use websocket instead of pipe for better compatibility
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, // Allow custom Chrome path
+        executablePath, // Use detected Chrome path
       });
 
       const sessionId = this.generateSessionId();
