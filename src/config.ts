@@ -42,7 +42,14 @@ export const config = {
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
     '--disable-features=TranslateUI',
-    '--disable-features=VizDisplayCompositor'
+    '--disable-features=VizDisplayCompositor',
+    // Railway-specific fixes
+    '--disable-crash-reporter',
+    '--disable-crash-reporter-for-testing',
+    '--user-data-dir=/tmp/chrome-user-data',
+    '--data-path=/tmp/chrome-data',
+    '--disk-cache-dir=/tmp/chrome-cache',
+    '--homedir=/tmp'
   ],
 
   // Memory Management (optimized for Railway's 1GB limit)

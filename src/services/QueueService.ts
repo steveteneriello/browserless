@@ -26,11 +26,18 @@ export class QueueService {
     try {
       logger.info('Initializing queue service...');
 
-      // Skip Redis initialization in build environment
+      // Skip Redis initialization in build environment or if Redis is not available
       if (process.env.NODE_ENV === 'build' || 
           process.env.RAILWAY_ENVIRONMENT === 'build' ||
-          process.env.NIXPACKS_BUILD_PHASE) {
-        logger.info('Skipping Redis connection in build environment');
+          process.env.NIXPACKS_BUILD_PHASE ||
+          !process.env.REDIS_URL) {
+        logger.info('Skipping Redis connection - not available or in build environment');
+        return;
+      }
+
+      // Check if Redis is available
+      if (!Redis || typeof Redis.createClient !== 'function') {
+        logger.warn('Redis client not available, skipping queue service initialization');
         return;
       }
 

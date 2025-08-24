@@ -21,10 +21,11 @@ export class BrowserPool {
     const possiblePaths = [
       process.env.PUPPETEER_EXECUTABLE_PATH,
       process.env.CHROME_BIN,
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
+      // Railway-specific paths
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
       '/opt/google/chrome/chrome',
       '/snap/bin/chromium',
     ].filter(Boolean); // Remove falsy values

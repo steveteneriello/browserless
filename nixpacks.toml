@@ -1,10 +1,10 @@
 [phases.setup]
 dependsOn = []
-nixPkgs = ["chromium"]
+aptPkgs = ["google-chrome-stable"]
 
 [phases.install]
 dependsOn = ["setup"]
-cmd = "npm install --include=dev --no-audit --no-fund && ln -sf $(which chromium) /usr/bin/chromium-browser"
+cmd = "npm install --include=dev --no-audit --no-fund"
 
 [phases.build]
 dependsOn = ["install"]
@@ -14,15 +14,16 @@ NODE_ENV = "production"
 NPM_CONFIG_TIMEOUT = "600000"
 NPM_CONFIG_MAXSOCKETS = "3"
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium-browser"
-CHROME_BIN = "/usr/bin/chromium-browser"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/google-chrome-stable"
+CHROME_BIN = "/usr/bin/google-chrome-stable"
 NODE_OPTIONS = "--max-old-space-size=256"
+HOME = "/tmp"
 
 [providers.node]
 version = "18"
 
 [build]
-cmd = "npm run build:railway"
+cmd = "npm run build"
 
 [start]
 cmd = "node --max-old-space-size=256 --expose-gc dist/index.js"
