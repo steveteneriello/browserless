@@ -19,13 +19,19 @@ async function main(): Promise<void> {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  // Don't exit immediately in production to allow for graceful shutdown
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  process.exit(1);
+  // Don't exit immediately in production to allow for graceful shutdown
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 main();

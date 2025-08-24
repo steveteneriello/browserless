@@ -218,22 +218,42 @@ export class App {
   private async gracefulShutdown(server: any): Promise<void> {
     logger.info('Starting graceful shutdown...');
 
-    // Close WebSocket server first
-    if (this.wss) {
-      this.wss.close();
-      logger.info('WebSocket server closed');
-    }
+    // Set a timeout for graceful shutdown
+    const shutdownTimeout = setTimeout(() => {
+      logger.error('Graceful shutdown timeout, forcing exit');
+      process.exit(1);
+    }, 30000); // 30 seconds timeout
 
-    server.close(async () => {
-      try {
-        await this.browserPool.cleanup();
-        await this.queueService.cleanup();
-        logger.info('Graceful shutdown completed');
-        process.exit(0);
-      } catch (error) {
-        logger.error('Error during shutdown:', error);
-        process.exit(1);
+    try {
+      // Close WebSocket server first
+      if (this.wss) {
+        this.wss.close();
+        logger.info('WebSocket server closed');
       }
-    });
+
+      // Stop accepting new connections
+      server.close(async () => {
+        try {
+          // Cleanup services
+          await Promise.all([
+            this.browserPool.cleanup(),
+            this.queueService.cleanup()
+          ]);
+          
+          clearTimeout(shutdownTimeout);
+          logger.info('Graceful shutdown completed');
+          process.exit(0);
+        } catch (error) {
+          logger.error('Error during shutdown:', error);
+          clearTimeout(shutdownTimeout);
+          process.exit(1);
+        }
+      });
+
+    } catch (error) {
+      logger.error('Error during graceful shutdown:', error);
+      clearTimeout(shutdownTimeout);
+      process.exit(1);
+    }
   }
 }

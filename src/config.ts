@@ -8,11 +8,11 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
 
   // Browser Configuration
-  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '80000', 10), // 80 seconds
-  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '10', 10),
-  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '10', 10),
-  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '300000', 10), // 5 minutes
-  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '100', 10),
+  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '30000', 10), // 30 seconds for Railway
+  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '3', 10), // Lower for Railway
+  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '5', 10), // Lower for Railway
+  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '120000', 10), // 2 minutes
+  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '50', 10),
   
   // Enhanced browser arguments for production stability
   browserArgs: process.env.BROWSER_ARGS?.split(',') || [
@@ -36,11 +36,11 @@ export const config = {
     '--disable-new-content-rendering-timeout'
   ],
 
-  // Memory Management
-  maxMemoryPerBrowser: parseInt(process.env.MAX_MEMORY_PER_BROWSER || '536870912', 10), // 512MB
-  memoryWarningThreshold: parseFloat(process.env.MEMORY_WARNING_THRESHOLD || '0.8'), // 80%
-  memoryCriticalThreshold: parseFloat(process.env.MEMORY_CRITICAL_THRESHOLD || '0.9'), // 90%
-  garbageCollectionInterval: parseInt(process.env.GARBAGE_COLLECTION_INTERVAL || '30000', 10), // 30 seconds
+  // Memory Management (optimized for Railway)
+  maxMemoryPerBrowser: parseInt(process.env.MAX_MEMORY_PER_BROWSER || '268435456', 10), // 256MB
+  memoryWarningThreshold: parseFloat(process.env.MEMORY_WARNING_THRESHOLD || '0.7'), // 70%
+  memoryCriticalThreshold: parseFloat(process.env.MEMORY_CRITICAL_THRESHOLD || '0.85'), // 85%
+  garbageCollectionInterval: parseInt(process.env.GARBAGE_COLLECTION_INTERVAL || '15000', 10), // 15 seconds
 
   // Viewport Configuration
   defaultWidth: parseInt(process.env.DEFAULT_WIDTH || '1440', 10),
