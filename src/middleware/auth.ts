@@ -13,7 +13,16 @@ export const validateApiKey = (req: Request, res: Response, next: NextFunction):
     throw createError('API key or token is required. Provide via X-API-Key header or ?token= query parameter', 401);
   }
 
-  if (providedAuth !== config.apiKey && providedAuth !== config.token) {
+  // Support multiple valid tokens
+  const validTokens = [
+    config.apiKey,
+    config.token,
+    'bananalemon', // Legacy token
+    'XBQWSqW34JDCj1NYMmhyZF1fEgPYbgFsybj9jq46sJok2Ork', // Screenshot engine token
+    'default-api-key' // Development token
+  ].filter(Boolean); // Remove any undefined values
+
+  if (!validTokens.includes(providedAuth)) {
     throw createError('Invalid API key or token', 401);
   }
 
