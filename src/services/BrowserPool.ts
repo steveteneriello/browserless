@@ -18,6 +18,14 @@ export class BrowserPool {
   async initialize(): Promise<void> {
     logger.info('Initializing browser pool...');
     
+    // Skip browser pool initialization in build environment
+    if (process.env.NODE_ENV === 'build' || 
+        process.env.RAILWAY_ENVIRONMENT === 'build' ||
+        process.env.NIXPACKS_BUILD_PHASE) {
+      logger.info('Skipping browser pool initialization in build environment');
+      return;
+    }
+    
     // Start cleanup interval
     this.cleanupInterval = setInterval(
       () => this.cleanupSessions(),

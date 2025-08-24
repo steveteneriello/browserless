@@ -27,7 +27,9 @@ export class QueueService {
       logger.info('Initializing queue service...');
 
       // Skip Redis initialization in build environment
-      if (process.env.NODE_ENV === 'build' || process.env.RAILWAY_ENVIRONMENT === 'build') {
+      if (process.env.NODE_ENV === 'build' || 
+          process.env.RAILWAY_ENVIRONMENT === 'build' ||
+          process.env.NIXPACKS_BUILD_PHASE) {
         logger.info('Skipping Redis connection in build environment');
         return;
       }
@@ -97,7 +99,9 @@ export class QueueService {
     } catch (error) {
       logger.error('Failed to initialize queue service:', error);
       // Don't throw error in build environment
-      if (process.env.NODE_ENV === 'build' || process.env.RAILWAY_ENVIRONMENT === 'build') {
+      if (process.env.NODE_ENV === 'build' || 
+          process.env.RAILWAY_ENVIRONMENT === 'build' ||
+          process.env.NIXPACKS_BUILD_PHASE) {
         logger.warn('Continuing without queue service in build environment');
         return;
       }

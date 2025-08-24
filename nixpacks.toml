@@ -1,0 +1,23 @@
+[phases.setup]
+dependsOn = []
+
+[phases.install]
+dependsOn = ["setup"]
+
+[phases.build]
+dependsOn = ["install"]
+
+[variables]
+NODE_ENV = "production"
+NPM_CONFIG_TIMEOUT = "300000"
+NPM_CONFIG_MAXSOCKETS = "10"
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+
+[providers.node]
+version = "18"
+
+[build]
+cmd = "npm run build:railway"
+
+[start]
+cmd = "npm start"

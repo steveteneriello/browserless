@@ -36,8 +36,8 @@ RUN addgroup --system --gid 1001 nodejs \
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies with timeout and retry logic
+RUN npm ci --only=production --timeout=300000 --maxsockets=10 && npm cache clean --force
 
 # Copy source code
 COPY . .

@@ -7,8 +7,12 @@ export class MetricsService {
   private activeSessions: Gauge<string>;
   private queueSize: Gauge<string>;
   private errorCounter: Counter<string>;
+  private static initialized = false;
 
   constructor() {
+    // Clear any existing metrics to prevent conflicts
+    register.clear();
+    
     // Enable default metrics collection
     collectDefaultMetrics();
 
@@ -69,5 +73,10 @@ export class MetricsService {
 
   getContentType(): string {
     return register.contentType;
+  }
+
+  static clearRegistry(): void {
+    register.clear();
+    MetricsService.initialized = false;
   }
 }

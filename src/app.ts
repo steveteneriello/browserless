@@ -117,9 +117,40 @@ export class App {
 
   public async start(): Promise<void> {
     try {
-      // Initialize services
-      await this.browserPool.initialize();
-      await this.queueService.initialize();
+      // Check if we're in a build environment
+      const isBuildEnv = process.env.NODE_ENV === 'build' || 
+                        process.env.RAILWAY_ENVIRONMENT === 'build' ||
+                        process.env.NIXPACKS_BUILD_PHASE;
+
+      if (isBuildEnv) {
+        logger.info('Running in build environment, skipping service initialization');
+        // Still start the server for health checks during build
+        const server = this.app.listen(config.port, () => {
+          logger.info(`Server running on port ${config.port} (build mode)`);
+        });
+        return;
+      }
+
+      // Initialize services with error handling
+      try {
+        await this.browserPool.initialize();
+        logger.info('Browser pool initialized successfully');
+      } catch (error) {
+        logger.error('Failed to initialize browser pool:', error);
+        if (process.env.NODE_ENV === 'production') {
+          throw error;
+        }
+      }
+
+      try {
+        await this.queueService.initialize();
+        logger.info('Queue service initialized successfully');
+      } catch (error) {
+        logger.error('Failed to initialize queue service:', error);
+        if (process.env.NODE_ENV === 'production') {
+          logger.warn('Continuing without queue service');
+        }
+      }
       
       // Start server
       const server = this.app.listen(config.port, () => {
