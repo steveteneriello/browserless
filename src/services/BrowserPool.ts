@@ -37,15 +37,26 @@ export class BrowserPool {
 
   async createSession(): Promise<BrowserSession> {
     if (this.sessions.size >= config.maxConcurrentSessions) {
-      throw createError('Maximum concurrent sessions reached', 429);
+      throw createError(`Maximum concurrent sessions reached (${config.maxConcurrentSessions})`, 429);
     }
 
     try {
+      logger.info('Launching new browser session...', {
+        args: config.browserArgs,
+        timeout: config.browserTimeout,
+        currentSessions: this.sessions.size
+      });
+
       const browser = await puppeteer.launch({
         headless: true,
         args: config.browserArgs,
         timeout: config.browserTimeout,
         protocolTimeout: config.browserTimeout,
+        ignoreDefaultArgs: ['--disable-extensions'],
+        env: {
+          ...process.env,
+          DISPLAY: ':99',
+        }
       });
 
       const sessionId = this.generateSessionId();
@@ -65,12 +76,23 @@ export class BrowserPool {
         this.sessions.delete(sessionId);
       });
 
-      logger.info(`Created browser session ${sessionId}`);
+      logger.info(`Created browser session ${sessionId}`, {
+        totalSessions: this.sessions.size,
+        sessionId
+      });
       return session;
 
     } catch (error) {
-      logger.error('Failed to create browser session:', error);
-      throw createError('Failed to create browser session', 500);
+      logger.error('Failed to create browser session:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        args: config.browserArgs,
+        timeout: config.browserTimeout
+      });
+      throw createError(
+        `Failed to launch browser: ${error instanceof Error ? error.message : String(error)}`, 
+        500
+      );
     }
   }
 

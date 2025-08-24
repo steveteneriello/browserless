@@ -13,6 +13,7 @@ import { validateApiKey } from './middleware/auth';
 import { browserRoutes } from './routes/browser';
 import { healthRoutes } from './routes/health';
 import { metricsRoutes } from './routes/metrics';
+import { debugRoutes } from './routes/debug';
 import { BrowserPool } from './services/BrowserPool';
 import { QueueService } from './services/QueueService';
 import { MetricsService } from './services/MetricsService';
@@ -90,6 +91,9 @@ export class App {
 
     // Browser automation routes
     this.app.use('/api/browser', browserRoutes(this.browserPool, this.queueService));
+
+    // Debug routes (no auth required for testing)
+    this.app.use('/debug', debugRoutes(this.browserPool));
 
     // Root route
     this.app.get('/', (req: express.Request, res: express.Response) => {

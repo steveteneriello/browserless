@@ -14,7 +14,7 @@ export const config = {
   browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '120000', 10), // 2 minutes
   maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '50', 10),
   
-  // Enhanced browser arguments for production stability
+  // Enhanced browser arguments for production stability (optimized for Railway)
   browserArgs: process.env.BROWSER_ARGS?.split(',') || [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -23,14 +23,31 @@ export const config = {
     '--disable-gpu',
     '--disable-web-security',
     '--disable-features=VizDisplayCompositor',
-    '--max-old-space-size=512',
-    '--memory-pressure-off',
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
     '--disable-ipc-flooding-protection',
     '--disable-extensions',
     '--disable-plugins',
+    '--disable-sync',
+    '--disable-translate',
+    '--disable-default-apps',
+    '--disable-background-networking',
+    '--disable-component-update',
+    '--disable-domain-reliability',
+    '--disable-features=TranslateUI',
+    '--disable-features=BlinkGenPropertyTrees',
+    '--disable-hang-monitor',
+    '--disable-prompt-on-repost',
+    '--disable-client-side-phishing-detection',
+    '--disable-component-extensions-with-background-pages',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--no-pings',
+    '--no-zygote',
+    '--single-process',
+    '--memory-pressure-off',
+    '--max-old-space-size=256',
     '--virtual-time-budget=10000',
     '--run-all-compositor-stages-before-draw',
     '--disable-new-content-rendering-timeout'
