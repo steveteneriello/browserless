@@ -7,26 +7,20 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
 
-  // Browser Configuration
-  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '30000', 10), // 30 seconds for Railway
-  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '3', 10), // Lower for Railway
-  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '5', 10), // Lower for Railway
-  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '120000', 10), // 2 minutes
-  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '50', 10),
+  // Browser Configuration (optimized for Railway)
+  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '60000', 10), // Increased to 60 seconds
+  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '2', 10), // Reduced to 2 for Railway
+  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '3', 10), // Reduced for stability
+  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '60000', 10), // 1 minute
+  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '25', 10),
   
-  // Enhanced browser arguments for production stability (optimized for Railway)
+  // Enhanced browser arguments for Railway environment (conservative approach)
   browserArgs: process.env.BROWSER_ARGS?.split(',') || [
     '--no-sandbox',
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
     '--disable-gpu',
     '--disable-web-security',
-    '--disable-features=VizDisplayCompositor',
-    '--disable-background-timer-throttling',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding',
-    '--disable-ipc-flooding-protection',
     '--disable-extensions',
     '--disable-plugins',
     '--disable-sync',
@@ -35,22 +29,20 @@ export const config = {
     '--disable-background-networking',
     '--disable-component-update',
     '--disable-domain-reliability',
-    '--disable-features=TranslateUI',
-    '--disable-features=BlinkGenPropertyTrees',
     '--disable-hang-monitor',
     '--disable-prompt-on-repost',
     '--disable-client-side-phishing-detection',
-    '--disable-component-extensions-with-background-pages',
     '--no-default-browser-check',
     '--no-first-run',
     '--no-pings',
     '--no-zygote',
-    '--single-process',
     '--memory-pressure-off',
     '--max-old-space-size=256',
-    '--virtual-time-budget=10000',
-    '--run-all-compositor-stages-before-draw',
-    '--disable-new-content-rendering-timeout'
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-features=VizDisplayCompositor'
   ],
 
   // Memory Management (optimized for Railway)

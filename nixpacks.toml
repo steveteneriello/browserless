@@ -1,5 +1,6 @@
 [phases.setup]
 dependsOn = []
+nixPkgs = ["chromium"]
 
 [phases.install]
 dependsOn = ["setup"]
@@ -10,10 +11,11 @@ dependsOn = ["install"]
 
 [variables]
 NODE_ENV = "production"
-NPM_CONFIG_TIMEOUT = "300000"
-NPM_CONFIG_MAXSOCKETS = "10"
+NPM_CONFIG_TIMEOUT = "600000"
+NPM_CONFIG_MAXSOCKETS = "5"
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-NODE_OPTIONS = "--max-old-space-size=512"
+PUPPETEER_EXECUTABLE_PATH = "/nix/store/*/bin/chromium"
+NODE_OPTIONS = "--max-old-space-size=384"
 
 [providers.node]
 version = "18"
@@ -22,4 +24,4 @@ version = "18"
 cmd = "npm run build:railway"
 
 [start]
-cmd = "node --max-old-space-size=512 dist/index.js"
+cmd = "node --max-old-space-size=384 dist/index.js"

@@ -35,28 +35,30 @@ export class BrowserPool {
     logger.info('Browser pool initialized successfully');
   }
 
-  async createSession(): Promise<BrowserSession> {
+  async createSession(retryCount = 0): Promise<BrowserSession> {
     if (this.sessions.size >= config.maxConcurrentSessions) {
       throw createError(`Maximum concurrent sessions reached (${config.maxConcurrentSessions})`, 429);
     }
 
+    const maxRetries = 3;
+    
     try {
       logger.info('Launching new browser session...', {
-        args: config.browserArgs,
+        args: config.browserArgs.slice(0, 5), // Log only first 5 args to avoid clutter
         timeout: config.browserTimeout,
-        currentSessions: this.sessions.size
+        currentSessions: this.sessions.size,
+        attempt: retryCount + 1
       });
 
       const browser = await puppeteer.launch({
         headless: true,
         args: config.browserArgs,
         timeout: config.browserTimeout,
-        protocolTimeout: config.browserTimeout,
-        ignoreDefaultArgs: ['--disable-extensions'],
-        env: {
-          ...process.env,
-          DISPLAY: ':99',
-        }
+        protocolTimeout: config.browserTimeout * 2, // Double the protocol timeout
+        ignoreDefaultArgs: false,
+        dumpio: false,
+        pipe: true, // Use pipe instead of websocket for better stability
+        slowMo: 100, // Add slight delay for stability
       });
 
       const sessionId = this.generateSessionId();
@@ -86,11 +88,19 @@ export class BrowserPool {
       logger.error('Failed to create browser session:', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        args: config.browserArgs,
-        timeout: config.browserTimeout
+        attempt: retryCount + 1,
+        maxRetries
       });
+
+      // Retry logic for browser launch failures
+      if (retryCount < maxRetries) {
+        logger.info(`Retrying browser launch (attempt ${retryCount + 2}/${maxRetries + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
+        return this.createSession(retryCount + 1);
+      }
+
       throw createError(
-        `Failed to launch browser: ${error instanceof Error ? error.message : String(error)}`, 
+        `Failed to launch browser after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : String(error)}`, 
         500
       );
     }
