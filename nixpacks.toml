@@ -4,7 +4,7 @@ aptPkgs = ["google-chrome-stable"]
 
 [phases.install]
 dependsOn = ["setup"]
-cmd = "npm install --include=dev --no-audit --no-fund"
+cmd = "npm install --include=dev --no-audit --no-fund && mkdir -p /tmp/.config /tmp/.local/share /tmp/.cache /tmp/chrome-user-data /tmp/chrome-data /tmp/chrome-cache /tmp/chrome-crashes"
 
 [phases.build]
 dependsOn = ["install"]
@@ -18,6 +18,12 @@ PUPPETEER_EXECUTABLE_PATH = "/usr/bin/google-chrome-stable"
 CHROME_BIN = "/usr/bin/google-chrome-stable"
 NODE_OPTIONS = "--max-old-space-size=256"
 HOME = "/tmp"
+XDG_CONFIG_HOME = "/tmp/.config"
+XDG_DATA_HOME = "/tmp/.local/share"
+XDG_CACHE_HOME = "/tmp/.cache"
+TMPDIR = "/tmp"
+TEMP = "/tmp"
+TMP = "/tmp"
 
 [providers.node]
 version = "18"
@@ -26,4 +32,4 @@ version = "18"
 cmd = "npm run build"
 
 [start]
-cmd = "node --max-old-space-size=256 --expose-gc dist/index.js"
+cmd = "./start.sh"

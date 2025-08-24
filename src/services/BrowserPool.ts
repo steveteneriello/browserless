@@ -79,6 +79,18 @@ export class BrowserPool {
         attempt: retryCount + 1
       });
 
+      // Set environment variables for Chrome to avoid home directory issues
+      const env = {
+        ...process.env,
+        HOME: '/tmp',
+        XDG_CONFIG_HOME: '/tmp/.config',
+        XDG_DATA_HOME: '/tmp/.local/share',
+        XDG_CACHE_HOME: '/tmp/.cache',
+        TMPDIR: '/tmp',
+        TEMP: '/tmp',
+        TMP: '/tmp'
+      };
+
       const browser = await puppeteer.launch({
         headless: true,
         args: config.browserArgs,
@@ -88,6 +100,7 @@ export class BrowserPool {
         dumpio: process.env.NODE_ENV === 'development', // Only dump output in dev
         pipe: false, // Use websocket instead of pipe for better compatibility
         executablePath, // Use detected Chrome path
+        env, // Pass environment variables
       });
 
       const sessionId = this.generateSessionId();
