@@ -29,7 +29,7 @@ export class BrowserPool {
     // Start cleanup interval
     this.cleanupInterval = setInterval(
       () => this.cleanupSessions(),
-      30000 // Check every 30 seconds
+      10000 // Check every 10 seconds for aggressive cleanup
     );
 
     logger.info('Browser pool initialized successfully');
@@ -156,7 +156,15 @@ export class BrowserPool {
       try {
         await session.browser.close();
         this.sessions.delete(sessionId);
-        logger.info(`Closed browser session ${sessionId}`);
+        
+        // Force garbage collection if available (Railway enables --expose-gc)
+        if (global.gc) {
+          global.gc();
+        }
+        
+        logger.info(`Closed browser session ${sessionId}`, {
+          remainingSessions: this.sessions.size
+        });
       } catch (error) {
         logger.error(`Error closing session ${sessionId}:`, error);
       }

@@ -12,10 +12,10 @@ dependsOn = ["install"]
 [variables]
 NODE_ENV = "production"
 NPM_CONFIG_TIMEOUT = "600000"
-NPM_CONFIG_MAXSOCKETS = "5"
+NPM_CONFIG_MAXSOCKETS = "3"
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
 PUPPETEER_EXECUTABLE_PATH = "/nix/store/*/bin/chromium"
-NODE_OPTIONS = "--max-old-space-size=384"
+NODE_OPTIONS = "--max-old-space-size=256"
 
 [providers.node]
 version = "18"
@@ -24,4 +24,4 @@ version = "18"
 cmd = "npm run build:railway"
 
 [start]
-cmd = "node --max-old-space-size=384 dist/index.js"
+cmd = "node --max-old-space-size=256 --expose-gc dist/index.js"

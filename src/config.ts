@@ -5,14 +5,14 @@ dotenv.config();
 export const config = {
   // Server
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: parseInt(process.env.PORT || '3000', 10), // Railway will set PORT automatically
 
   // Browser Configuration (optimized for Railway)
-  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '60000', 10), // Increased to 60 seconds
-  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '2', 10), // Reduced to 2 for Railway
-  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '3', 10), // Reduced for stability
-  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '60000', 10), // 1 minute
-  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '25', 10),
+  browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || '45000', 10), // Reduced to 45 seconds
+  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '1', 10), // Only 1 for Railway
+  maxJobsPerBrowser: parseInt(process.env.MAX_JOBS_PER_BROWSER || '2', 10), // Reduced for stability
+  browserIdleTimeout: parseInt(process.env.BROWSER_IDLE_TIMEOUT || '30000', 10), // 30 seconds
+  maxRequestsPerInstance: parseInt(process.env.MAX_REQUESTS_PER_INSTANCE || '10', 10),
   
   // Enhanced browser arguments for Railway environment (conservative approach)
   browserArgs: process.env.BROWSER_ARGS?.split(',') || [
@@ -45,11 +45,11 @@ export const config = {
     '--disable-features=VizDisplayCompositor'
   ],
 
-  // Memory Management (optimized for Railway)
-  maxMemoryPerBrowser: parseInt(process.env.MAX_MEMORY_PER_BROWSER || '268435456', 10), // 256MB
-  memoryWarningThreshold: parseFloat(process.env.MEMORY_WARNING_THRESHOLD || '0.7'), // 70%
-  memoryCriticalThreshold: parseFloat(process.env.MEMORY_CRITICAL_THRESHOLD || '0.85'), // 85%
-  garbageCollectionInterval: parseInt(process.env.GARBAGE_COLLECTION_INTERVAL || '15000', 10), // 15 seconds
+  // Memory Management (optimized for Railway's 1GB limit)
+  maxMemoryPerBrowser: parseInt(process.env.MAX_MEMORY_PER_BROWSER || '134217728', 10), // 128MB
+  memoryWarningThreshold: parseFloat(process.env.MEMORY_WARNING_THRESHOLD || '0.6'), // 60%
+  memoryCriticalThreshold: parseFloat(process.env.MEMORY_CRITICAL_THRESHOLD || '0.75'), // 75%
+  garbageCollectionInterval: parseInt(process.env.GARBAGE_COLLECTION_INTERVAL || '10000', 10), // 10 seconds
 
   // Viewport Configuration
   defaultWidth: parseInt(process.env.DEFAULT_WIDTH || '1440', 10),
