@@ -3,6 +3,7 @@ dependsOn = []
 
 [phases.install]
 dependsOn = ["setup"]
+cmd = "npm install --include=dev"
 
 [phases.build]
 dependsOn = ["install"]

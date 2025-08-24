@@ -64,7 +64,7 @@ export class App {
 
     // Logging
     this.app.use(morgan('combined', {
-      stream: { write: message => logger.info(message.trim()) }
+      stream: { write: (message: string) => logger.info(message.trim()) }
     }));
 
     // Body parsing
@@ -88,7 +88,7 @@ export class App {
     this.app.use('/api/browser', browserRoutes(this.browserPool, this.queueService));
 
     // Root route
-    this.app.get('/', (req, res) => {
+    this.app.get('/', (req: express.Request, res: express.Response) => {
       res.json({
         service: 'Browserless API',
         version: '1.0.0',
@@ -107,7 +107,7 @@ export class App {
 
   private initializeErrorHandling(): void {
     // 404 handler
-    this.app.use('*', (req, res) => {
+    this.app.use('*', (req: express.Request, res: express.Response) => {
       res.status(404).json({ error: 'Route not found' });
     });
 
