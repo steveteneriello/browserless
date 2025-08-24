@@ -14,6 +14,7 @@ import { browserRoutes } from './routes/browser';
 import { healthRoutes } from './routes/health';
 import { metricsRoutes } from './routes/metrics';
 import { debugRoutes } from './routes/debug';
+import { statusRoutes } from './routes/status';
 import { BrowserPool } from './services/BrowserPool';
 import { QueueService } from './services/QueueService';
 import { MetricsService } from './services/MetricsService';
@@ -83,6 +84,9 @@ export class App {
   private initializeRoutes(): void {
     // Health check (no auth required)
     this.app.use('/health', healthRoutes);
+    
+    // Status endpoint (no auth required)
+    this.app.use('/status', statusRoutes);
     
     // Metrics (no auth required for monitoring)
     if (config.enableMetrics) {

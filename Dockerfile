@@ -17,6 +17,15 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     libxkbcommon0 \
     libgtk-3-0 \
+    libatk1.0-0 \
+    libc6-dev \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrender1 \
+    libcairo-gobject2 \
+    libdbus-1-3 \
+    libgtk-3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome

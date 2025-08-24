@@ -54,11 +54,11 @@ export class BrowserPool {
         headless: true,
         args: config.browserArgs,
         timeout: config.browserTimeout,
-        protocolTimeout: config.browserTimeout * 2, // Double the protocol timeout
+        protocolTimeout: config.browserTimeout * 2,
         ignoreDefaultArgs: false,
-        dumpio: false,
-        pipe: true, // Use pipe instead of websocket for better stability
-        slowMo: 100, // Add slight delay for stability
+        dumpio: process.env.NODE_ENV === 'development', // Only dump output in dev
+        pipe: false, // Use websocket instead of pipe for better compatibility
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, // Allow custom Chrome path
       });
 
       const sessionId = this.generateSessionId();
