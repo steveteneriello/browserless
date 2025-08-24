@@ -72,7 +72,7 @@ export const browserRoutes = (browserPool: BrowserPool, queueService: QueueServi
 
         // Wait for any additional loading if specified
         if (options.waitFor) {
-          await page.waitForTimeout(options.waitFor);
+          await new Promise(resolve => setTimeout(resolve, options.waitFor));
         }
 
         const screenshotOptions: any = {
@@ -185,7 +185,7 @@ export const browserRoutes = (browserPool: BrowserPool, queueService: QueueServi
         });
 
         if (options.waitFor) {
-          await page.waitForTimeout(options.waitFor);
+          await new Promise(resolve => setTimeout(resolve, options.waitFor));
         }
 
         let data: any;
