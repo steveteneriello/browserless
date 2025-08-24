@@ -9,6 +9,7 @@ restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
+TOKEN = "your-secure-token-here"
 BROWSER_TIMEOUT = "30000"
 MAX_CONCURRENT_SESSIONS = "5"
 RATE_LIMIT_WINDOW_MS = "900000"

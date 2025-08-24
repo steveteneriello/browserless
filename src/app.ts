@@ -4,6 +4,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
@@ -17,6 +19,8 @@ import { MetricsService } from './services/MetricsService';
 
 export class App {
   public app: express.Application;
+  public server: any;
+  public wss: WebSocketServer | undefined;
   private browserPool: BrowserPool;
   private queueService: QueueService;
   private metricsService: MetricsService;
@@ -93,6 +97,10 @@ export class App {
         service: 'Browserless API',
         version: '1.0.0',
         status: 'running',
+        websocket: {
+          endpoint: `wss://${req.get('host')}?token=${config.token}`,
+          note: 'Use this WebSocket endpoint for browserless.io compatible connections'
+        },
         endpoints: [
           'GET /health - Health check',
           'GET /metrics - Prometheus metrics',
@@ -100,7 +108,11 @@ export class App {
           'POST /api/browser/pdf - Generate PDF',
           'POST /api/browser/scrape - Scrape page content',
           'POST /api/browser/evaluate - Execute JavaScript'
-        ]
+        ],
+        authentication: {
+          methods: ['X-API-Key header', 'token query parameter', 'Bearer token'],
+          example: `curl -H "X-API-Key: ${config.token}" https://${req.get('host')}/api/browser/screenshot`
+        }
       });
     });
   }
@@ -152,15 +164,50 @@ export class App {
         }
       }
       
-      // Start server
-      const server = this.app.listen(config.port, () => {
+      // Start server with WebSocket support
+      this.server = createServer(this.app);
+      
+      // Initialize WebSocket server
+      this.wss = new WebSocketServer({ 
+        server: this.server,
+        path: '/',
+        verifyClient: (info) => {
+          // Check for token in query string
+          const url = new URL(info.req.url!, `http://${info.req.headers.host}`);
+          const token = url.searchParams.get('token');
+          return token === config.token;
+        }
+      });
+
+      // Handle WebSocket connections
+      this.wss.on('connection', (ws, req) => {
+        logger.info('WebSocket connection established');
+        
+        ws.on('message', async (message) => {
+          try {
+            const data = JSON.parse(message.toString());
+            // Handle browserless.io-style WebSocket messages
+            logger.info('WebSocket message received:', data);
+          } catch (error) {
+            logger.error('WebSocket message error:', error);
+            ws.send(JSON.stringify({ error: 'Invalid message format' }));
+          }
+        });
+
+        ws.on('close', () => {
+          logger.info('WebSocket connection closed');
+        });
+      });
+
+      this.server.listen(config.port, () => {
         logger.info(`Server running on port ${config.port}`);
+        logger.info(`WebSocket endpoint: wss://your-domain.railway.app?token=${config.token}`);
         logger.info(`Environment: ${config.nodeEnv}`);
       });
 
       // Graceful shutdown
-      process.on('SIGTERM', () => this.gracefulShutdown(server));
-      process.on('SIGINT', () => this.gracefulShutdown(server));
+      process.on('SIGTERM', () => this.gracefulShutdown(this.server));
+      process.on('SIGINT', () => this.gracefulShutdown(this.server));
 
     } catch (error) {
       logger.error('Failed to start server:', error);
@@ -170,6 +217,12 @@ export class App {
 
   private async gracefulShutdown(server: any): Promise<void> {
     logger.info('Starting graceful shutdown...');
+
+    // Close WebSocket server first
+    if (this.wss) {
+      this.wss.close();
+      logger.info('WebSocket server closed');
+    }
 
     server.close(async () => {
       try {

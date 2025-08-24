@@ -62,7 +62,8 @@ export const config = {
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
 
   // Security
-  apiKey: process.env.API_KEY || 'default-api-key',
+  apiKey: process.env.API_KEY || process.env.TOKEN || 'default-api-key',
+  token: process.env.TOKEN || process.env.API_KEY || 'default-api-key',
   corsOrigin: process.env.CORS_ORIGIN || '*',
   allowedDomains: process.env.ALLOWED_DOMAINS?.split(',') || ['*'],
   blockedDomains: process.env.BLOCKED_DOMAINS?.split(',') || [
